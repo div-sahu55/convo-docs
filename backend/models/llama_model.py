@@ -1,18 +1,21 @@
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
+from llama_cpp import Llama
 
-class GPT2Model:
+class LlamaModel:
     def __init__(self):
-        # Load the DistilGPT-2 model and tokenizer
-        self.tokenizer = GPT2Tokenizer.from_pretrained("distilgpt2")
-        self.model = GPT2LMHeadModel.from_pretrained("distilgpt2")
+        self.model = Llama(
+            model_path="./models/Mistral-7B-Instruct-v0.2.Q4_K_M.gguf",
+            n_ctx=4096,   # context window
+            n_threads=6,  # optional: adjust based on your CPU cores
+            temperature=0.7,
+            top_p=0.9,
+            repeat_penalty=1.1
+        )
 
-    def generate_text(self, prompt, max_length=50):
-        # Encode the input prompt
-        inputs = self.tokenizer.encode(prompt, return_tensors="pt")
-        
-        # Generate text
-        outputs = self.model.generate(inputs, max_length=max_length, num_return_sequences=1)
-        
-        # Decode the generated text
-        generated_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        return generated_text
+    def query(self, prompt, max_length=1000):
+        response = self.model(
+            prompt=prompt,
+            max_tokens=max_length,
+            stop=["<|eot_id|>", "</s>"],  # mistral models usually use <|eot_id|> or </s>
+            echo=False
+        )
+        return response["choices"][0]["text"].strip()
